@@ -46,8 +46,9 @@ function App() {
 	}
 
 	useEffect(() => {
-		if (backend) {
-			backend.getUserByPrincipal().then((user) => {
+		if (backend && principal) {
+			console.log("principal", principal);
+			backend.getUserByPrincipal(principal).then((user) => {
 				setUser(JSON.stringify(user, (key, value) => (typeof value === "bigint" ? value.toString() : value), 2));
 			});
 		}
@@ -56,9 +57,9 @@ function App() {
 	function handleGetUser(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		if (backend) {
-			backend.getUserByPrincipal().then((user) => {
-				setUser(JSON.stringify(user, (key, value) => (typeof value === "bigint" ? value.toString() : value), 2));
-			});
+			// backend.getUserByPrincipal().then((user) => {
+			// 	setUser(JSON.stringify(user, (key, value) => (typeof value === "bigint" ? value.toString() : value), 2));
+			// });
 		}
 		return false;
 	}
@@ -93,9 +94,40 @@ function App() {
 		return false;
 	}
 
+	function handleBuyLand(event: React.FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		const land_id = (event.currentTarget.elements.namedItem("land_id") as HTMLInputElement).value;
+		if (backend) {
+			backend.buyLand(BigInt(land_id)).then((result) => {
+				const [code, message, land] = result;
+				if (Number(code) === 200) {
+					if (land && land[0]) {
+						setLand(JSON.stringify(land, (key, value) => (typeof value === "bigint" ? value.toString() : value), 2));
+						setMessage(message);
+					}
+				} else {
+					setMessage("Land registration failed");
+				}
+			});
+		}
+		return false;
+	}
+
 	useEffect(() => {
 		if (!identity) setPrincipal("");
 	}, [identity]);
+
+	useEffect(() => {
+		if (identity && backend && principal) {
+			backend.getUserByPrincipal(principal).then((user) => {
+				setUser(JSON.stringify(user, (key, value) => (typeof value === "bigint" ? value.toString() : value), 2));
+			});
+			backend.getLands().then((lands) => {
+				// setLands(JSON.stringify(lands));
+				setLands(JSON.stringify(lands, (key, value) => (typeof value === "bigint" ? value.toString() : value), 2));
+			});
+		}
+	});
 
 	useEffect(() => {
 		if (identity && backend && !principal) {
@@ -117,7 +149,7 @@ function App() {
 			<section id="message">Message: {message}</section>
 			{/* <section id="user">User: {user ? JSON.stringify(JSON.parse(user).principal.__principal__, null, 2) : "No user data available"}</section> */}
 			<section id="user">User: {user ? JSON.stringify(JSON.parse(user), null, 2) : "No user data available"}</section>
-			<section id="land">Land: {land ? JSON.stringify(JSON.parse(land), null, 2) : "No land data available"}</section>
+			<section id="land">My Land: {land ? JSON.stringify(JSON.parse(land), null, 2) : "No land data available"}</section>
 			<section id="lands">Lands: {lands ? JSON.stringify(JSON.parse(lands), null, 2) : "No lands data available"}</section>
 			<section id="principal">Principal: {principal}</section>
 			<br />
@@ -146,8 +178,10 @@ function App() {
 									<button type="submit">Add Your Land</button>
 								</form>
 
-								<form action="#" onSubmit={handleGetLands}>
-									<button type="submit">Get Lands</button>
+								<form action="#" onSubmit={handleBuyLand}>
+									<label htmlFor="land_id">Enter land id: &nbsp;</label>
+									<input id="land_id" alt="land_id" type="text" pattern="\d*" />
+									<button type="submit">Buy Land</button>
 								</form>
 							</>
 						) : (
